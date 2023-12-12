@@ -1,46 +1,40 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { nanoid } from 'nanoid';
 import ContactForm from './ContactForm/ContactForm';
 import ContactList from './ContactList/ContactList';
 import Filter from './Filter/Filter';
 
-class App extends Component {
-  state = {
-    contacts: [],
-    name: '',
-    number: '',
-    filter: '',
-  };
+const App = () => {
+  const [contacts, setContacts] = useState([]);
+  const [name, setName] = useState('');
+  const [number, setNumber] = useState('');
+  const [filter, setFilter] = useState('');
 
-  componentDidMount() {
+  useEffect(() => {
     const storedContacts = localStorage.getItem('contacts');
     if (storedContacts) {
-      this.setState({ contacts: JSON.parse(storedContacts) });
+      setContacts(JSON.parse(storedContacts));
     }
-  }
+  }, []);
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.contacts !== this.state.contacts) {
-      localStorage.setItem('contacts', JSON.stringify(this.state.contacts));
-    }
-  }
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
+  }, [contacts]);
 
-  handleNameChange = (event) => {
-    this.setState({ name: event.target.value });
-  };
+  const handleNameChange = useCallback((event) => {
+    setName(event.target.value);
+  }, []);
 
-  handleNumberChange = (event) => {
-    this.setState({ number: event.target.value });
-  };
+  const handleNumberChange = useCallback((event) => {
+    setNumber(event.target.value);
+  }, []);
 
-  handleFilterChange = (event) => {
-    this.setState({ filter: event.target.value });
-  };
+  const handleFilterChange = useCallback((event) => {
+    setFilter(event.target.value);
+  }, []);
 
-  addContact = (event) => {
+  const addContact = useCallback((event) => {
     event.preventDefault();
-
-    const { name, number, contacts } = this.state;
 
     if (!name.trim() || !number.trim()) return;
 
@@ -52,38 +46,37 @@ class App extends Component {
     }
 
     const newContact = { id: nanoid(), name, number };
-    this.setState({ contacts: [...contacts, newContact], name: '', number: '' });
-  };
+    setContacts((prevContacts) => [...prevContacts, newContact]);
+    setName('');
+    setNumber('');
+  }, [name, number, contacts]);
 
-  deleteContact = (id) => {
-    const updatedContacts = this.state.contacts.filter((contact) => contact.id !== id);
-    this.setState({ contacts: updatedContacts });
-  };
+  const deleteContact = useCallback((id) => {
+    setContacts((prevContacts) => prevContacts.filter((contact) => contact.id !== id));
+  }, []);
 
-  getFilteredContacts() {
-    return this.state.contacts.filter((contact) =>
-      contact.name && contact.name.toLowerCase().includes((this.state.filter || '').toLowerCase())
+  const getFilteredContacts = useCallback(() => {
+    return contacts.filter((contact) =>
+      contact.name && contact.name.toLowerCase().includes((filter || '').toLowerCase())
     );
-  }
+  }, [contacts, filter]);
 
-  render() {
-    return (
-      <div>
-        <h1>Phonebook</h1>
-        <ContactForm
-          name={this.state.name}
-          number={this.state.number}
-          handleNameChange={this.handleNameChange}
-          handleNumberChange={this.handleNumberChange}
-          addContact={this.addContact}
-        />
+  return (
+    <div>
+      <h1>Phonebook</h1>
+      <ContactForm
+        name={name}
+        number={number}
+        handleNameChange={handleNameChange}
+        handleNumberChange={handleNumberChange}
+        addContact={addContact}
+      />
 
-        <h2>Contacts</h2>
-        <Filter filter={this.state.filter} handleFilterChange={this.handleFilterChange} />
-        <ContactList contacts={this.getFilteredContacts()} onDeleteContact={this.deleteContact} />
-      </div>
-    );
-  }
-}
+      <h2>Contacts</h2>
+      <Filter filter={filter} handleFilterChange={handleFilterChange} />
+      <ContactList contacts={getFilteredContacts()} onDeleteContact={deleteContact} />
+    </div>
+  );
+};
 
 export default App;
